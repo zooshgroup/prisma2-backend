@@ -1,0 +1,8 @@
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://prismatest:prismatest@localhost:5432/prismatest?schema=public"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
