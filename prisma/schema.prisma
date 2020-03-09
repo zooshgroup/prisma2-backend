@@ -4,11 +4,18 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://prismatest:prismatest@127.0.0.1:5432/prismatest?schema=public"
+  url      = "postgresql://prismatest:prismatest@localhost:5432/prismatest?schema=public"
+}
+
+model movie {
+  id     Int    @id
+  length Int
+  title  String
 }
 
 model user {
-  id       String @id @default(uuid())
+  age      Int?
+  id       String @id
   name     String
   password String
 }
