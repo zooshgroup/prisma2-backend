@@ -18,8 +18,8 @@ type Movie {
 type Query {
   users: [User!]!
   movies: [Movie!]!
-  auser(where: UserWhereUniqueInput): User!
-  filtermovies(searchString: String): [Movie!]!
+  aUser(where: UserWhereUniqueInput): User!
+  filterMovies(searchString: String): [Movie!]!
 }
 
 type Mutation {
@@ -50,7 +50,7 @@ const resolvers = {
     users: (parent, args, ctx: Context) => {
       return ctx.prisma.user.findMany();
     },
-    auser: (parent, args, ctx: Context) => {
+    aUser: (parent, args, ctx: Context) => {
       return ctx.prisma.user.findOne({
         where: { id: args.where.id },
       })
@@ -58,7 +58,7 @@ const resolvers = {
     movies: (parent, args, ctx: Context) => {
       return ctx.prisma.movie.findMany();
     },
-    filtermovies: (parent, args, ctx: Context) => {
+    filterMovies: (parent, args, ctx: Context) => {
       return ctx.prisma.movie.findMany({
         where: {
           OR: [

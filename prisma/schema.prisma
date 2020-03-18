@@ -8,14 +8,14 @@ datasource db {
 }
 
 model movie {
-  id     Int    @id
+  id     String @id @default(uuid())
   length Int
   title  String
 }
 
 model user {
-  age      Int?
-  id       String @id
+  age      Int
+  id       String @id @default(uuid())
   name     String
   password String
 }
