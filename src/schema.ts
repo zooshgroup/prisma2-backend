@@ -1,7 +1,6 @@
 import { makeExecutableSchema } from 'graphql-tools'
-import { Context } from './context'
 import { sign } from 'jsonwebtoken'
-import { getUserId, APP_SECRET } from './auth'
+import { getUserId, APP_SECRET, Context } from './context'
 
 const typeDefs = `
 type User {
