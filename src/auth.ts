@@ -1,10 +1,9 @@
 import { rule, shield } from "graphql-shield";
-import { getUserId } from "./context";
+import { Context } from "./context";
 
-  
 // Rules
-const isAuthenticated = rule()( (parent, args, context) => {
-    const userId = getUserId(context)
+const isAuthenticated = rule()( (parent: any, args: any, context: Context) => {
+    const userId = context.userId
     return Boolean(userId)
 })
 

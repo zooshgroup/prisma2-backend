@@ -1,6 +1,6 @@
 import { makeExecutableSchema } from 'graphql-tools'
 import { sign } from 'jsonwebtoken'
-import { getUserId, APP_SECRET, Context } from './context'
+import { APP_SECRET, Context } from './context'
 
 const typeDefs = `
 type User {
@@ -53,7 +53,7 @@ input MovieCreateInput {
 
 const resolvers = {
   Query: {
-    users: (parent, args, ctx: Context) => {
+    users: (parent: any, args: any, ctx: Context) => {
       const users = ctx.prisma.user.findMany({
         where: {
           OR: [
@@ -63,7 +63,7 @@ const resolvers = {
       })
       return users
     },
-    movies: (parent, args, ctx: Context) => {
+    movies: (parent: any, args: any, ctx: Context) => {
       const filteredMovies = ctx.prisma.movie.findMany({
         where: {
           OR: [
@@ -73,8 +73,8 @@ const resolvers = {
       })
       return filteredMovies
     },
-    whoami: async (parent, args, ctx: Context) => {
-      const userId = getUserId(ctx)
+    whoami: async (parent: any, args: any, ctx: Context) => {
+      const userId = ctx.userId
       const user = await ctx.prisma.user.findOne({
         where : {
           id: String(userId),
@@ -84,7 +84,7 @@ const resolvers = {
     }
   },
   Mutation: {
-    signupUser: async (parent, args, ctx: Context) => {
+    signupUser: async (parent: any, args: any, ctx: Context) => {
       const emailTaken = await ctx.prisma.user.findOne({
         where: {
           email: args.data.email
@@ -95,11 +95,11 @@ const resolvers = {
       const user = ctx.prisma.user.create(args)
       return user
     },
-    addMovie: (parent, args, ctx: Context) => {
+    addMovie: (parent: any, args: any, ctx: Context) => {
       const movie = ctx.prisma.movie.create(args)
       return movie
     },
-    loginUser: async (parent, args, ctx: Context) => {
+    loginUser: async (parent: any, args: any, ctx: Context) => {
       const user = await ctx.prisma.user.findOne({
         where: {
           email: args.data.email
@@ -108,7 +108,6 @@ const resolvers = {
       if (!user) {
         throw new Error(`No user found for email: ${args.data.email}`)
       }
-
       const passwordValid = args.data.password == user.password
       if (!passwordValid) {
         throw new Error('Invalid password')

@@ -6,12 +6,14 @@ const prisma = new PrismaClient()
 
 export interface Context {
   prisma: PrismaClient
-  request: any
+  userId: string
 }
 
 export function createContext(request: ContextParameters): Context  {
+  const tryUserId = getUserId(request)
+  const userId = tryUserId ? tryUserId : ""
   return {
-    ...request,
+    userId,
     prisma,
   }
 }
@@ -25,8 +27,8 @@ interface Token {
 }
 
 // Getting UserId
-export function getUserId(context: Context) {
-    const Authorization = context.request.get('Authorization')
+function getUserId(request: any) {
+    const Authorization = request.request.get('Authorization')
     if (Authorization) {
         const token = Authorization.replace('Bearer ', '')
         const verifiedToken = jwt.verify(token, APP_SECRET) as Token
