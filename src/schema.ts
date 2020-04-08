@@ -60,7 +60,6 @@ const resolvers = {
             { name: { contains: args.search } }
           ]
         }
-      })
       return users
     },
     movies: (parent: any, args: any, ctx: Context) => {
