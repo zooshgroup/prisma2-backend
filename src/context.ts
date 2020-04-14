@@ -31,7 +31,13 @@ function getUserId(request: any) {
     const Authorization = request.request.get('Authorization')
     if (Authorization) {
         const token = Authorization.replace('Bearer ', '')
-        const verifiedToken = jwt.verify(token, APP_SECRET) as Token
+        let verifiedToken
+        try {
+          verifiedToken = jwt.verify(token, APP_SECRET) as Token
+        }
+        catch(e) {
+          return undefined;
+        }
         return verifiedToken && verifiedToken.userId
     }
 }
