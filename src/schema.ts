@@ -75,8 +75,8 @@ const resolvers = {
     },
     movies: async (parent: any, args: any, ctx: Context) => {
       let search = `%${args.search}%`
-      const posts = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('${search}');`)
-      return posts
+      const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('${search}');`)
+      return movies
     },
     whoami: async (parent: any, args: any, ctx: Context) => {
       const userId = ctx.userId
