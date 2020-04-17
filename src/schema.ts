@@ -1,6 +1,16 @@
 import { makeExecutableSchema } from 'graphql-tools'
 import { sign } from 'jsonwebtoken'
 import { APP_SECRET, Context } from './context'
+import { createError } from "apollo-errors";
+
+const WrongCredentialsError = createError("WrongCredentialsError", {
+    message: "The provided credentials are invalid."
+})
+
+// This should not be exposed either?
+const EmailTakenError = createError("EmailTakenError", {
+    message: "The provided email is taken."
+})
 
 const typeDefs = `
 type User {
@@ -89,7 +99,7 @@ const resolvers = {
           email: args.data.email
         },
       })
-      if(emailTaken) throw new Error('Email already taken.')
+      if(emailTaken) throw new EmailTakenError()
       //const hashedPassword = hash(password, 10)
       const user = ctx.prisma.user.create(args)
       return user
@@ -105,11 +115,11 @@ const resolvers = {
         },
       })
       if (!user) {
-        throw new Error(`No user found for email: ${args.data.email}`)
+        throw new WrongCredentialsError()
       }
       const passwordValid = args.data.password == user.password
       if (!passwordValid) {
-        throw new Error('Invalid password')
+        throw new WrongCredentialsError()
       }
       
       return {
