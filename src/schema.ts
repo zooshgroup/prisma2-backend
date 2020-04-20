@@ -7,7 +7,6 @@ const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
 })
 
-// This should not be exposed either?
 const EmailTakenError = createError('EmailTakenError', {
   message: 'The provided email is taken.',
 })
