@@ -11,6 +11,10 @@ const EmailTakenError = createError('EmailTakenError', {
   message: 'The provided email is taken.',
 });
 
+const ReviewCreateError = createError('ReviewCreateError', {
+  message: 'Failed to add review.',
+});
+
 type ReviewArgs = {
   data: ReviewCreateInput,
 };
@@ -32,11 +36,11 @@ type connectUser = {
 
 type uniqueMovie = {
   id: string,
-}
+};
 
 type uniqueUser = {
   id: string,
-}
+};
 
 const typeDefs = `
 type User {
@@ -108,7 +112,7 @@ input ReviewCreateInput {
   review: String
   movieId: String
 }
-`
+`;
 
 const resolvers: any = {
   Query: {
@@ -117,8 +121,8 @@ const resolvers: any = {
         where: {
           OR: [{ name: { contains: args.search } }],
         },
-      })
-      return users
+      });
+      return users;
     },
     reviews: (parent: any, args: any, ctx: Context) => {
       const filteredReviews = ctx.prisma.review.findMany({
@@ -129,25 +133,25 @@ const resolvers: any = {
           movie: true,
           user: true,
         }
-      })
-      return filteredReviews
+      });
+      return filteredReviews;
     },
     movies: (parent: any, args: any, ctx: Context) => {
       const filteredMovies = ctx.prisma.movie.findMany({
         where: {
           OR: [{ title: { contains: args.search } }],
         },
-      })
-      return filteredMovies
+      });
+      return filteredMovies;
     },
     whoami: async (parent: any, args: any, ctx: Context) => {
-      const userId = ctx.userId
+      const userId = ctx.userId;
       const user = await ctx.prisma.user.findOne({
         where: {
           id: String(userId),
         },
-      })
-      return user
+      });
+      return user;
     },
   },
   Mutation: {
@@ -156,11 +160,11 @@ const resolvers: any = {
         where: {
           email: args.data.email,
         },
-      })
-      if (emailTaken) throw new EmailTakenError()
+      });
+      if (emailTaken) throw new EmailTakenError();
       //const hashedPassword = hash(password, 10)
-      const user = ctx.prisma.user.create(args)
-      return user
+      const user = ctx.prisma.user.create(args);
+      return user;
     },
     addReview: async (parent: any, args: any, ctx: Context) => {
       const newreview: ReviewCreateInput = {
@@ -173,42 +177,43 @@ const resolvers: any = {
           connect: { id: args.data.movieId },
         },
       };
+      // if(Failed to connect IDs) throw new ReviewCreateError();
       const r_args: ReviewArgs = {
         data: newreview,
       };
+      // Missing ID, Movie, User field from reviewCreateInput
       const review = ctx.prisma.review.create(r_args);
       return review;
     },
     addMovie: (parent: any, args: any, ctx: Context) => {
-      const movie = ctx.prisma.movie.create(args)
-      return movie
+      const movie = ctx.prisma.movie.create(args);
+      return movie;
     },
     loginUser: async (parent: any, args: any, ctx: Context) => {
       const user = await ctx.prisma.user.findOne({
         where: {
           email: args.data.email,
         },
-      })
+      });
       if (!user) {
-        throw new WrongCredentialsError()
+        throw new WrongCredentialsError();
       }
       const passwordValid = args.data.password == user.password
       if (!passwordValid) {
-        throw new WrongCredentialsError()
+        throw new WrongCredentialsError();
       }
-
       return {
         token: sign({ userId: user.id }, APP_SECRET),
         user,
-      }
+      };
     },
   },
   User: {},
   Movie: {},
   Review: {},
-}
+};
 
 export const schema = makeExecutableSchema({
   resolvers,
   typeDefs,
-})
+});

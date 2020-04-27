@@ -1,11 +1,11 @@
-import { rule, shield } from 'graphql-shield'
-import { Context } from './context'
+import { rule, shield } from 'graphql-shield';
+import { Context } from './context';
 
 // Rules
 const isAuthenticated = rule()((parent: any, args: any, context: Context) => {
-  const userId = context.userId
-  return Boolean(userId)
-})
+  const userId = context.userId;
+  return Boolean(userId);
+});
 
 // Permissions
 export const permissions = shield(
@@ -24,4 +24,4 @@ export const permissions = shield(
   {
     allowExternalErrors: true,
   },
-)
+);
