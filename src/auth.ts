@@ -14,9 +14,11 @@ export const permissions = shield(
       users: isAuthenticated,
       movies: isAuthenticated,
       whoami: isAuthenticated,
+      reviews: isAuthenticated,
     },
     Mutation: {
       addMovie: isAuthenticated,
+      addReview: isAuthenticated,
     },
   },
   {

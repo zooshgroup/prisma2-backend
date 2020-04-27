@@ -1,15 +1,42 @@
-import { makeExecutableSchema } from 'graphql-tools'
-import { sign } from 'jsonwebtoken'
-import { APP_SECRET, Context } from './context'
-import { createError } from 'apollo-errors'
+import { makeExecutableSchema } from 'graphql-tools';
+import { sign } from 'jsonwebtoken';
+import { APP_SECRET, Context } from './context';
+import { createError } from 'apollo-errors';
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
-})
+});
 
 const EmailTakenError = createError('EmailTakenError', {
   message: 'The provided email is taken.',
-})
+});
+
+type ReviewArgs = {
+  data: ReviewCreateInput,
+};
+
+type ReviewCreateInput = {
+  rating: number,
+  review: string,
+  movie_id: connectMovie,
+  user_id: connectUser,
+};
+
+type connectMovie = {
+  connect: uniqueMovie,
+};
+
+type connectUser = {
+  connect: uniqueUser,
+};
+
+type uniqueMovie = {
+  id: string,
+}
+
+type uniqueUser = {
+  id: string,
+}
 
 const typeDefs = `
 type User {
@@ -17,29 +44,46 @@ type User {
   name: String
   age: Int
   id: ID
+  review: [Review!]!
 }
 
 type Movie {
   title: String!
   length: Int
   id: ID
+  review: [Review!]!
+}
+
+type Review {
+  id: ID
+  rating: Int
+  review: String
+  user: ReviewReturnUser
+  movie: Movie
 }
 
 type Query {
   users(search: String): [User!]!
   movies(search: String): [Movie!]!
+  reviews(search: String): [Review!]!
   whoami: User!
 }
 
 type Mutation {
   signupUser(data: UserCreateInput!): User!
   addMovie(data: MovieCreateInput!): Movie!
+  addReview(data: ReviewCreateInput!): Review!
   loginUser(data: LoginInput!): loginOutput!
 }
 
 type loginOutput {
   token: String
   user: User
+}
+
+type ReviewReturnUser {
+  id: ID
+  name: String
 }
 
 input LoginInput {
@@ -53,9 +97,16 @@ input UserCreateInput {
   password: String!
   age: Int
 }
+
 input MovieCreateInput {
   title: String!
   length: Int
+}
+
+input ReviewCreateInput {
+  rating: Int
+  review: String
+  movieId: String
 }
 `
 
@@ -68,6 +119,18 @@ const resolvers: any = {
         },
       })
       return users
+    },
+    reviews: (parent: any, args: any, ctx: Context) => {
+      const filteredReviews = ctx.prisma.review.findMany({
+        where: {
+          OR: [{ review: { contains: args.search } }],
+        },
+        include: {
+          movie: true,
+          user: true,
+        }
+      })
+      return filteredReviews
     },
     movies: (parent: any, args: any, ctx: Context) => {
       const filteredMovies = ctx.prisma.movie.findMany({
@@ -99,6 +162,23 @@ const resolvers: any = {
       const user = ctx.prisma.user.create(args)
       return user
     },
+    addReview: async (parent: any, args: any, ctx: Context) => {
+      const newreview: ReviewCreateInput = {
+        rating: args.data.rating,
+        review: args.data.review,
+        user_id: {
+          connect: { id: ctx.userId },
+        },
+        movie_id: {
+          connect: { id: args.data.movieId },
+        },
+      };
+      const r_args: ReviewArgs = {
+        data: newreview,
+      };
+      const review = ctx.prisma.review.create(r_args);
+      return review;
+    },
     addMovie: (parent: any, args: any, ctx: Context) => {
       const movie = ctx.prisma.movie.create(args)
       return movie
@@ -125,6 +205,7 @@ const resolvers: any = {
   },
   User: {},
   Movie: {},
+  Review: {},
 }
 
 export const schema = makeExecutableSchema({

@@ -5,3 +5,5 @@
 2. Int type ID: @default(autoincrement()) does not work
 
 3. uuid type is not supported, workaround is to use String type instead
+
+4. Introspect removes manually added @unique, @default() values from the schema
