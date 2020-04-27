@@ -181,7 +181,7 @@ const resolvers: any = {
       const r_args: ReviewArgs = {
         data: newreview,
       };
-      // Missing ID, Movie, User field from reviewCreateInput
+
       const review = ctx.prisma.review.create(r_args);
       return review;
     },
