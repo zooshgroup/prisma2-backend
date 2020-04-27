@@ -22,8 +22,8 @@ type ReviewArgs = {
 type ReviewCreateInput = {
   rating: number,
   review: string,
-  movie_id: connectMovie,
-  user_id: connectUser,
+  movie: connectMovie,
+  user: connectUser,
 };
 
 type connectMovie = {
@@ -170,10 +170,10 @@ const resolvers: any = {
       const newreview: ReviewCreateInput = {
         rating: args.data.rating,
         review: args.data.review,
-        user_id: {
+        user: {
           connect: { id: ctx.userId },
         },
-        movie_id: {
+        movie: {
           connect: { id: args.data.movieId },
         },
       };
