@@ -5,7 +5,7 @@ import { permissions } from './auth'
 import { formatError } from 'apollo-errors'
 
 const options: Options = {
-  formatError
+  formatError,
 }
 
 new GraphQLServer({

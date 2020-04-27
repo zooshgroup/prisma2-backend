@@ -1,15 +1,14 @@
 import { makeExecutableSchema } from 'graphql-tools'
 import { sign } from 'jsonwebtoken'
 import { APP_SECRET, Context } from './context'
-import { createError } from "apollo-errors";
+import { createError } from 'apollo-errors'
 
-const WrongCredentialsError = createError("WrongCredentialsError", {
-    message: "The provided credentials are invalid."
+const WrongCredentialsError = createError('WrongCredentialsError', {
+  message: 'The provided credentials are invalid.',
 })
 
-// This should not be exposed either?
-const EmailTakenError = createError("EmailTakenError", {
-    message: "The provided email is taken."
+const EmailTakenError = createError('EmailTakenError', {
+  message: 'The provided email is taken.',
 })
 
 const typeDefs = `
@@ -60,16 +59,13 @@ input MovieCreateInput {
 }
 `
 
-
-const resolvers = {
+const resolvers: any = {
   Query: {
     users: (parent: any, args: any, ctx: Context) => {
       const users = ctx.prisma.user.findMany({
         where: {
-          OR: [
-            { name: { contains: args.search } }
-          ]
-        }
+          OR: [{ name: { contains: args.search } }],
+        },
       })
       return users
     },
@@ -81,21 +77,21 @@ const resolvers = {
     whoami: async (parent: any, args: any, ctx: Context) => {
       const userId = ctx.userId
       const user = await ctx.prisma.user.findOne({
-        where : {
+        where: {
           id: String(userId),
-        }
+        },
       })
       return user
-    }
+    },
   },
   Mutation: {
     signupUser: async (parent: any, args: any, ctx: Context) => {
       const emailTaken = await ctx.prisma.user.findOne({
         where: {
-          email: args.data.email
+          email: args.data.email,
         },
       })
-      if(emailTaken) throw new EmailTakenError()
+      if (emailTaken) throw new EmailTakenError()
       //const hashedPassword = hash(password, 10)
       const user = ctx.prisma.user.create(args)
       return user
@@ -107,7 +103,7 @@ const resolvers = {
     loginUser: async (parent: any, args: any, ctx: Context) => {
       const user = await ctx.prisma.user.findOne({
         where: {
-          email: args.data.email
+          email: args.data.email,
         },
       })
       if (!user) {
@@ -117,12 +113,12 @@ const resolvers = {
       if (!passwordValid) {
         throw new WrongCredentialsError()
       }
-      
+
       return {
-        token: sign({ userId : user.id }, APP_SECRET),
+        token: sign({ userId: user.id }, APP_SECRET),
         user,
       }
-    }
+    },
   },
   User: {},
   Movie: {},
@@ -130,5 +126,5 @@ const resolvers = {
 
 export const schema = makeExecutableSchema({
   resolvers,
-  typeDefs
-});
+  typeDefs,
+})
