@@ -136,13 +136,10 @@ const resolvers: any = {
       });
       return filteredReviews;
     },
-    movies: (parent: any, args: any, ctx: Context) => {
-      const filteredMovies = ctx.prisma.movie.findMany({
-        where: {
-          OR: [{ title: { contains: args.search } }],
-        },
-      });
-      return filteredMovies;
+    movies: async (parent: any, args: any, ctx: Context) => {
+      const search = args.search
+      const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`)
+      return movies
     },
     whoami: async (parent: any, args: any, ctx: Context) => {
       const userId = ctx.userId;
