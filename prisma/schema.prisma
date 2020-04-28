@@ -8,15 +8,27 @@ datasource db {
 }
 
 model movie {
-  id     String @id @default(uuid())
-  length Int
+  id     String   @default(uuid()) @id
+  length Int?
   title  String
+  review review[]
+}
+
+model review {
+  id       String  @default(uuid()) @id
+  movie_id String
+  rating   Int
+  review   String?
+  user_id  String
+  movie    movie   @relation(fields: [movie_id], references: [id])
+  user     user    @relation(fields: [user_id], references: [id])
 }
 
 model user {
-  email    String @unique
-  age      Int
-  id       String @id @default(uuid())
+  age      Int?
+  email    String   @unique
+  id       String   @default(uuid()) @id
   name     String
   password String
+  review   review[]
 }
