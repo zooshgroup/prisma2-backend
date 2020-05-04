@@ -181,7 +181,19 @@ const resolvers: any = {
       };
 
       const review = ctx.prisma.review.create(r_args);
-      return review;
+      const theId = (await review).id;
+      
+      const newRev = ctx.prisma.review.findOne({
+        where: {
+          id: theId,
+        },
+        include: {
+          movie: true,
+          user: true,
+        }
+      });
+
+      return newRev;
     },
     addMovie: (parent: any, args: any, ctx: Context) => {
       const movie = ctx.prisma.movie.create(args);
