@@ -71,6 +71,7 @@ type Query {
   movies(search: String): [Movie!]!
   reviews(search: String): [Review!]!
   whoami: User!
+  movie(id: String): Movie!
 }
 
 type Mutation {
@@ -141,6 +142,14 @@ const resolvers: any = {
       if(args.search) search = args.search;
       const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`);
       return movies;
+    },
+    movie: (parent: any, args: any, ctx: Context) => {
+      const movie = ctx.prisma.movie.findOne({
+        where: {
+          id: args.id,
+        },
+      });
+      return movie;
     },
     whoami: async (parent: any, args: any, ctx: Context) => {
       const userId = ctx.userId;
