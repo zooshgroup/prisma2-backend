@@ -2,6 +2,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { sign } from 'jsonwebtoken';
 import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
+import { reviewOrderByInput } from '@prisma/client';
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -69,8 +70,9 @@ type Review {
 type Query {
   users(search: String): [User!]!
   movies(search: String): [Movie!]!
-  reviews(search: String): [Review!]!
+  reviews(search: String, orderByRatingAsc: Boolean): [Review!]!
   whoami: User!
+  movie(id: String): Movie!
 }
 
 type Mutation {
@@ -125,6 +127,9 @@ const resolvers: any = {
       return users;
     },
     reviews: (parent: any, args: any, ctx: Context) => {
+      let sort:reviewOrderByInput = { rating: 'desc' };
+      if (args.orderByRatingAsc === true) sort = { rating: 'asc' };
+
       const filteredReviews = ctx.prisma.review.findMany({
         where: {
           OR: [{ review: { contains: args.search } }],
@@ -132,14 +137,24 @@ const resolvers: any = {
         include: {
           movie: true,
           user: true,
-        }
+        },
+        orderBy: args.orderByRatingAsc!==undefined ? sort : null,
       });
       return filteredReviews;
     },
     movies: async (parent: any, args: any, ctx: Context) => {
-      const search = args.search
-      const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`)
-      return movies
+      let search = "";
+      if(args.search) search = args.search;
+      const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`);
+      return movies;
+    },
+    movie: (parent: any, args: any, ctx: Context) => {
+      const movie = ctx.prisma.movie.findOne({
+        where: {
+          id: args.id,
+        },
+      });
+      return movie;
     },
     whoami: async (parent: any, args: any, ctx: Context) => {
       const userId = ctx.userId;
@@ -180,7 +195,19 @@ const resolvers: any = {
       };
 
       const review = ctx.prisma.review.create(r_args);
-      return review;
+      const theId = (await review).id;
+      
+      const newRev = ctx.prisma.review.findOne({
+        where: {
+          id: theId,
+        },
+        include: {
+          movie: true,
+          user: true,
+        }
+      });
+
+      return newRev;
     },
     addMovie: (parent: any, args: any, ctx: Context) => {
       const movie = ctx.prisma.movie.create(args);
