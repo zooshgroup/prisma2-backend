@@ -2,7 +2,8 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { sign } from 'jsonwebtoken';
 import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
-import { reviewOrderByInput } from '@prisma/client';
+import { reviewOrderByInput, userCreateInput } from '@prisma/client';
+import { compare, hash, genSalt } from 'bcryptjs'
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -127,7 +128,7 @@ const resolvers: any = {
       return users;
     },
     reviews: (parent: any, args: any, ctx: Context) => {
-      let sort:reviewOrderByInput = { rating: 'desc' };
+      let sort: reviewOrderByInput = { rating: 'desc' };
       if (args.orderByRatingAsc === true) sort = { rating: 'asc' };
 
       const filteredReviews = ctx.prisma.review.findMany({
@@ -138,13 +139,13 @@ const resolvers: any = {
           movie: true,
           user: true,
         },
-        orderBy: args.orderByRatingAsc!==undefined ? sort : null,
+        orderBy: args.orderByRatingAsc !== undefined ? sort : null,
       });
       return filteredReviews;
     },
     movies: async (parent: any, args: any, ctx: Context) => {
       let search = "";
-      if(args.search) search = args.search;
+      if (args.search) search = args.search;
       const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`);
       return movies;
     },
@@ -173,9 +174,15 @@ const resolvers: any = {
           email: args.data.email,
         },
       });
+
       if (emailTaken) throw new EmailTakenError();
-      //const hashedPassword = hash(password, 10)
-      const user = ctx.prisma.user.create(args);
+      
+      let hashedPassword = 'pass';
+      await hash(args.data.password, 10).then((hash) => hashedPassword = hash);
+      
+      const newUser: userCreateInput = { email: args.data.email, name: args.data.name, password: hashedPassword, age: args.data.age };
+      const user = ctx.prisma.user.create({ data: newUser });
+
       return user;
     },
     addReview: async (parent: any, args: any, ctx: Context) => {
@@ -196,7 +203,7 @@ const resolvers: any = {
 
       const review = ctx.prisma.review.create(r_args);
       const theId = (await review).id;
-      
+
       const newRev = ctx.prisma.review.findOne({
         where: {
           id: theId,
@@ -222,7 +229,8 @@ const resolvers: any = {
       if (!user) {
         throw new WrongCredentialsError();
       }
-      const passwordValid = args.data.password == user.password
+      let passwordValid = false;
+      await compare(args.data.password, user.password).then((resp)=>passwordValid = resp);
       if (!passwordValid) {
         throw new WrongCredentialsError();
       }
