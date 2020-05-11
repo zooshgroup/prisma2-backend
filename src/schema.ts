@@ -3,7 +3,7 @@ import { sign } from 'jsonwebtoken';
 import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
 import { reviewOrderByInput, userCreateInput } from '@prisma/client';
-import { compare, hash, genSalt } from 'bcryptjs'
+import { compare, hash } from 'bcryptjs'
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -177,8 +177,7 @@ const resolvers: any = {
 
       if (emailTaken) throw new EmailTakenError();
       
-      let hashedPassword = 'pass';
-      await hash(args.data.password, 10).then((hash) => hashedPassword = hash);
+      const hashedPassword = await hash(args.data.password, 10);
       
       const newUser: userCreateInput = { email: args.data.email, name: args.data.name, password: hashedPassword, age: args.data.age };
       const user = ctx.prisma.user.create({ data: newUser });
@@ -229,8 +228,8 @@ const resolvers: any = {
       if (!user) {
         throw new WrongCredentialsError();
       }
-      let passwordValid = false;
-      await compare(args.data.password, user.password).then((resp)=>passwordValid = resp);
+      
+      const passwordValid = await compare(args.data.password, user.password);
       if (!passwordValid) {
         throw new WrongCredentialsError();
       }
