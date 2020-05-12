@@ -14,7 +14,7 @@ const EmailTakenError = createError('EmailTakenError', {
 });
 
 const ReviewCreateError = createError('ReviewCreateError', {
-  message: 'Failed to add review.',
+  message: 'You have already reviewed this movie.',
 });
 
 type ReviewArgs = {
@@ -185,6 +185,20 @@ const resolvers: any = {
       return user;
     },
     addReview: async (parent: any, args: any, ctx: Context) => {
+      const theUserReviews = await ctx.prisma.review.findMany({
+        where: {
+          user_id: ctx.userId,
+        },
+        include: {
+          movie: true,
+        }
+      });
+
+      const hasReviewed = theUserReviews.find(r => r.movie_id === args.data.movieId);
+      if (hasReviewed) {
+        throw new ReviewCreateError();
+      }
+
       const newreview: ReviewCreateInput = {
         rating: args.data.rating,
         review: args.data.review,
@@ -195,7 +209,7 @@ const resolvers: any = {
           connect: { id: args.data.movieId },
         },
       };
-      // if(Failed to connect IDs) throw new ReviewCreateError();
+      
       const r_args: ReviewArgs = {
         data: newreview,
       };
