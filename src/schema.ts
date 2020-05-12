@@ -4,6 +4,8 @@ import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
 import { reviewOrderByInput, userCreateInput } from '@prisma/client';
 import { compare, hash } from 'bcryptjs'
+import { recommendForUser } from './recommendations';
+import { ReviewCreateInput, ReviewArgs } from './types';
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -17,32 +19,9 @@ const ReviewCreateError = createError('ReviewCreateError', {
   message: 'You have already reviewed this movie.',
 });
 
-type ReviewArgs = {
-  data: ReviewCreateInput,
-};
-
-type ReviewCreateInput = {
-  rating: number,
-  review: string,
-  movie: connectMovie,
-  user: connectUser,
-};
-
-type connectMovie = {
-  connect: uniqueMovie,
-};
-
-type connectUser = {
-  connect: uniqueUser,
-};
-
-type uniqueMovie = {
-  id: string,
-};
-
-type uniqueUser = {
-  id: string,
-};
+const RecommendationError = createError('RecommendationError', {
+  message: 'Movie recommendations cannot be provided.',
+});
 
 const typeDefs = `
 type User {
@@ -74,6 +53,7 @@ type Query {
   reviews(search: String, orderByRatingAsc: Boolean): [Review!]!
   whoami: User!
   movie(id: String): Movie!
+  recommendMovies(options: RecommendOptions): [Movie!]!
 }
 
 type Mutation {
@@ -114,6 +94,10 @@ input ReviewCreateInput {
   rating: Int
   review: String
   movieId: String
+}
+
+input RecommendOptions {
+  size: Int
 }
 `;
 
@@ -166,6 +150,13 @@ const resolvers: any = {
       });
       return user;
     },
+    recommendMovies: async (parent: any, args: any, ctx: Context) => {
+      const reviews = await ctx.prisma.review.findMany();
+      const userReviews = reviews.filter(r => r.user_id === ctx.userId);
+      const recommendations = recommendForUser(reviews, userReviews);
+
+      if (recommendations.length === 0) throw new RecommendationError();
+    },
   },
   Mutation: {
     signupUser: async (parent: any, args: any, ctx: Context) => {
@@ -176,9 +167,9 @@ const resolvers: any = {
       });
 
       if (emailTaken) throw new EmailTakenError();
-      
+
       const hashedPassword = await hash(args.data.password, 10);
-      
+
       const newUser: userCreateInput = { email: args.data.email, name: args.data.name, password: hashedPassword, age: args.data.age };
       const user = ctx.prisma.user.create({ data: newUser });
 
@@ -209,7 +200,7 @@ const resolvers: any = {
           connect: { id: args.data.movieId },
         },
       };
-      
+
       const r_args: ReviewArgs = {
         data: newreview,
       };
@@ -242,7 +233,7 @@ const resolvers: any = {
       if (!user) {
         throw new WrongCredentialsError();
       }
-      
+
       const passwordValid = await compare(args.data.password, user.password);
       if (!passwordValid) {
         throw new WrongCredentialsError();
