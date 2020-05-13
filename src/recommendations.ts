@@ -45,7 +45,12 @@ export function recommendForUser(reviews: Review[], reviewsByUser?: Review[]) {
             reviewsPerUser[i].movies.sort((m1, m2) => m1.score > m2.score ? -1 : (m1.score === m2.score ? 0 : 1));
             for (let mv of reviewsPerUser[i].movies) {
                 if (!reviewsByUser.find(r => r.movie_id === mv.movie_id)) {
-                    if (mv.rating >= MIN_LIK) recommendedMovies.push({ id: mv.movie_id, reason: { user_id: reviewsPerUser[i].uid, movies: [reviewsPerUser[i].movies[0].movie_id, reviewsPerUser[i].movies[1].movie_id, reviewsPerUser[i].movies[2].movie_id] } });
+                    let theMovies = [];
+                    let forloopSize = reviewsPerUser[i].movies.length > 2 ? 3 : reviewsPerUser[i].movies.length;
+                    for (let y = 0; y < forloopSize; y++) {
+                        theMovies.push(reviewsPerUser[i].movies[y].movie_id);
+                    }
+                    if (mv.rating >= MIN_LIK) recommendedMovies.push({ id: mv.movie_id, reason: { user_id: reviewsPerUser[i].uid, movies: theMovies } });
                 }
             }
         }
