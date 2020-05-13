@@ -1,28 +1,28 @@
 export type ReviewArgs = {
-    data: ReviewCreateInput,
+    data: ReviewCreateInput;
 };
 
 export type ReviewCreateInput = {
-    rating: number,
-    review: string,
-    movie: connectMovie,
-    user: connectUser,
+    rating: number;
+    review: string;
+    movie: connectMovie;
+    user: connectUser;
 };
 
 type connectMovie = {
-    connect: uniqueMovie,
+    connect: uniqueMovie;
 };
 
 type connectUser = {
-    connect: uniqueUser,
+    connect: uniqueUser;
 };
 
 type uniqueMovie = {
-    id: string,
+    id: string;
 };
 
 type uniqueUser = {
-    id: string,
+    id: string;
 };
 
 export type Review = {
@@ -31,4 +31,42 @@ export type Review = {
     rating: number;
     movie_id: string;
     user_id: string;
-}
+};
+
+type Movie = {
+    id: string;
+    length: number | null;
+    title: string;
+};
+
+export type Recommendations = {
+    movie: Movie;
+    info: InfoOnRec;
+};
+
+type InfoOnRec = {
+    user_id: string | undefined;
+    movies: string[] | undefined;
+};
+
+export type ReviewData = {
+    uid: string;
+    movies: MovieData[];
+    score: number;
+};
+
+type MovieData = {
+    movie_id: string;
+    rating: number;
+    score: number;
+};
+
+export type RecommendMovie = {
+    id: string;
+    reason: ReasonToRec;
+};
+
+type ReasonToRec = {
+    user_id: string;
+    movies: string[];
+};
