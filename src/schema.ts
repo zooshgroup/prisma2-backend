@@ -156,6 +156,11 @@ const resolvers: any = {
       const recommendations = recommendForUser(reviews, userReviews);
 
       if (recommendations.length === 0) throw new RecommendationError();
+
+      const recommendedMovies = await ctx.prisma.movie.findMany();
+      const filteredRecommendedMovies = recommendedMovies.filter(m => recommendations.find(r => r === m.id));
+
+      return filteredRecommendedMovies;
     },
   },
   Mutation: {
