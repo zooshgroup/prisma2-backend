@@ -178,9 +178,9 @@ const resolvers: any = {
       });
 
       if (emailTaken) throw new EmailTakenError();
-      
+
       const hashedPassword = await hash(args.data.password, 10);
-      
+
       const newUser: userCreateInput = { email: args.data.email, name: args.data.name, password: hashedPassword, age: args.data.age };
       const user = ctx.prisma.user.create({ data: newUser });
 
@@ -197,13 +197,18 @@ const resolvers: any = {
           connect: { id: args.data.movieId },
         },
       };
-      // if(Failed to connect IDs) throw new ReviewCreateError();
+
       const r_args: ReviewArgs = {
         data: newreview,
       };
-
-      const review = ctx.prisma.review.create(r_args);
-      const theId = (await review).id;
+      
+      let theId = '';
+      try {
+        const review = ctx.prisma.review.create(r_args);
+        theId = (await review).id;
+      } catch(e) {
+        throw new ReviewCreateError();
+      }
 
       const newRev = ctx.prisma.review.findOne({
         where: {
@@ -230,7 +235,7 @@ const resolvers: any = {
       if (!user) {
         throw new WrongCredentialsError();
       }
-      
+
       const passwordValid = await compare(args.data.password, user.password);
       if (!passwordValid) {
         throw new WrongCredentialsError();
