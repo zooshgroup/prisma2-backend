@@ -11,7 +11,7 @@ export interface Context {
 
 export function createContext(request: ContextParameters): Context {
   const tryUserId = getUserId(request);
-  const userId = tryUserId ? tryUserId : '' ;
+  const userId = tryUserId ? tryUserId : '';
   return {
     userId,
     prisma,

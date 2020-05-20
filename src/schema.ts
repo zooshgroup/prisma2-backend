@@ -201,12 +201,12 @@ const resolvers: any = {
       const r_args: ReviewArgs = {
         data: newreview,
       };
-      
+
       let theId = '';
       try {
         const review = ctx.prisma.review.create(r_args);
         theId = (await review).id;
-      } catch(e) {
+      } catch (e) {
         throw new ReviewCreateError();
       }
 
