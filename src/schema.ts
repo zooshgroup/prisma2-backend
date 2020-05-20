@@ -4,6 +4,7 @@ import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
 import { reviewOrderByInput, userCreateInput } from '@prisma/client';
 import { compare, hash } from 'bcryptjs'
+const SqlString = require('sqlstring');
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -145,8 +146,9 @@ const resolvers: any = {
     },
     movies: async (parent: any, args: any, ctx: Context) => {
       let search = "";
-      if (args.search) search = args.search;
-      const movies = await ctx.prisma.raw(`SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`);
+      if (args.search) search = SqlString.escape(args.search);
+      const sqlQ = `SELECT * FROM public.movie WHERE LOWER(title) LIKE LOWER('%${search}%');`;
+      const movies = await ctx.prisma.raw(sqlQ);
       return movies;
     },
     movie: (parent: any, args: any, ctx: Context) => {
