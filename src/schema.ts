@@ -2,8 +2,10 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { sign } from 'jsonwebtoken';
 import { APP_SECRET, Context } from './context';
 import { createError } from 'apollo-errors';
-import { reviewOrderByInput, userCreateInput } from '@prisma/client';
+import { reviewOrderByInput, userCreateInput, movieCreateArgs } from '@prisma/client';
 import { compare, hash } from 'bcryptjs'
+import { recommendForUser } from './recommendations';
+import { ReviewCreateInput, ReviewArgs, Recommendations } from './types';
 
 const WrongCredentialsError = createError('WrongCredentialsError', {
   message: 'The provided credentials are invalid.',
@@ -13,36 +15,13 @@ const EmailTakenError = createError('EmailTakenError', {
   message: 'The provided email is taken.',
 });
 
-const ReviewCreateError = createError('ReviewCreateError', {
-  message: 'Failed to add review.',
+const ReviewAlreadyExistsError = createError('ReviewAlreadyExistsError', {
+  message: 'The movie has already been reviewed by the current user.',
 });
 
-type ReviewArgs = {
-  data: ReviewCreateInput,
-};
-
-type ReviewCreateInput = {
-  rating: number,
-  review: string,
-  movie: connectMovie,
-  user: connectUser,
-};
-
-type connectMovie = {
-  connect: uniqueMovie,
-};
-
-type connectUser = {
-  connect: uniqueUser,
-};
-
-type uniqueMovie = {
-  id: string,
-};
-
-type uniqueUser = {
-  id: string,
-};
+const RecommendationError = createError('RecommendationError', {
+  message: 'Movie recommendations cannot be provided.',
+});
 
 const typeDefs = `
 type User {
@@ -74,6 +53,7 @@ type Query {
   reviews(search: String, orderByRatingAsc: Boolean): [Review!]!
   whoami: User!
   movie(id: String): Movie!
+  recommendMovies(options: RecommendOptions): [Recommendations!]!
 }
 
 type Mutation {
@@ -114,6 +94,20 @@ input ReviewCreateInput {
   rating: Int
   review: String
   movieId: String
+}
+
+type Recommendations {
+  movie: Movie!
+  info: InfoOnRec!
+}
+
+type InfoOnRec {
+  user_id: String!
+  movies: [String!]!
+}
+
+input RecommendOptions {
+  size: Int
 }
 `;
 
@@ -166,6 +160,40 @@ const resolvers: any = {
       });
       return user;
     },
+    recommendMovies: async (parent: any, args: any, ctx: Context) => {
+      let theRecs: Recommendations[] = [];
+
+      const reviewsByUser = await ctx.prisma.review.findMany({
+        where: {
+          user_id: ctx.userId,
+        },
+
+      });
+      if (!reviewsByUser) return theRecs;
+      const reviewsByOthers = await ctx.prisma.review.findMany({
+        where: {
+          NOT: {
+            user_id: ctx.userId,
+          }
+        },
+        orderBy: {
+          user_id: 'asc',
+        }
+      });
+
+      const recommendations = recommendForUser(reviewsByUser, reviewsByOthers);
+
+      if (recommendations.length === 0) throw new RecommendationError();
+
+      const recommendedMovies = await ctx.prisma.movie.findMany();
+      const filteredRecommendedMovies = recommendedMovies.filter(m => recommendations.find(r => r.id === m.id));
+
+      for (let frm of filteredRecommendedMovies) {
+        theRecs.push({ movie: frm, info: { user_id: recommendations.find(r => r.id === frm.id)?.reason.user_id, movies: recommendations.find(r => r.id === frm.id)?.reason.movies } });
+      }
+
+      return theRecs;
+    },
   },
   Mutation: {
     signupUser: async (parent: any, args: any, ctx: Context) => {
@@ -176,15 +204,29 @@ const resolvers: any = {
       });
 
       if (emailTaken) throw new EmailTakenError();
-      
+
       const hashedPassword = await hash(args.data.password, 10);
-      
+
       const newUser: userCreateInput = { email: args.data.email, name: args.data.name, password: hashedPassword, age: args.data.age };
       const user = ctx.prisma.user.create({ data: newUser });
 
       return user;
     },
     addReview: async (parent: any, args: any, ctx: Context) => {
+      const theUserReviews = await ctx.prisma.review.findMany({
+        where: {
+          user_id: ctx.userId,
+        },
+        include: {
+          movie: true,
+        }
+      });
+
+      const hasReviewed = theUserReviews.find(r => r.movie_id === args.data.movieId);
+      if (hasReviewed) {
+        throw new ReviewAlreadyExistsError();
+      }
+
       const newreview: ReviewCreateInput = {
         rating: args.data.rating,
         review: args.data.review,
@@ -228,7 +270,7 @@ const resolvers: any = {
       if (!user) {
         throw new WrongCredentialsError();
       }
-      
+
       const passwordValid = await compare(args.data.password, user.password);
       if (!passwordValid) {
         throw new WrongCredentialsError();
